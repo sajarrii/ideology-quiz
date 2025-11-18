@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>你是什么主义？意识形态测试</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 引入二维码库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 16px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 16px;
+        }
+        .question-text {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .options label {
+            display: block;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+        .options input {
+            margin-right: 6px;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            gap: 8px;
+        }
+        button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button.primary {
+            background: #007aff;
+            color: #fff;
+        }
+        button.secondary {
+            background: #e0e0e0;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .progress {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+        .bar-wrapper {
+            background: #e0e0e0;
+            border-radius: 999px;
+            overflow: hidden;
+            height: 6px;
+            margin-bottom: 10px;
+        }
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: #007aff;
+            transition: width 0.2s ease;
+        }
+        .result-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .result-detail {
+            font-size: 14px;
+            color: #444;
+            white-space: pre-line;
+        }
+        .qrcode-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #qrcode {
+            margin: 0 auto;
+            padding: 10px;
+            background: #fff;
+            display: inline-block;
+        }
+        .small-hint {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>你是什么主义？</h1>
+    <p style="text-align:center;font-size:14px;color:#666;">30 题快速测试你的政治/意识形态倾向（个人娱乐版）</p>
+
+    <div class="card">
+        <div class="progress">
+            进度：<span id="progress-text">1 / 30</span>
+        </div>
+        <div class="bar-wrapper">
+            <div class="bar" id="progress-bar"></div>
+        </div>
+
+        <div id="quiz-area">
+            <div class="question-text" id="question-text"></div>
+            <div class="options" id="options"></div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="secondary" id="prev-btn">上一题</button>
+            <button class="primary" id="next-btn">下一题</button>
+        </div>
+        <p class="small-hint">提示：每题只有一个选项。答完最后一题点“提交”查看结果。</p>
+    </div>
+
+    <div class="card" id="result-card" style="display:none;">
+        <div class="result-title" id="result-title"></div>
+        <div class="result-detail" id="result-detail"></div>
+    </div>
+
+    <div class="card qrcode-section">
+        <h3>分享给朋友做一做</h3>
+        <div id="qrcode"></div>
+        <div class="small-hint">
+            这个二维码指向当前页面地址。把页面部署到服务器或网盘后，朋友扫一扫就能直接做题。
+        </div>
+    </div>
+
+<script>
+const questions = [
+    // 1–10 政府与自由
+    {
+        q: "1. 政府的主要职能应该是什么？",
+        options: {
+            A: "保护个人自由和财产权",
+            B: "保障民生与平等",
+            C: "维护秩序和传统价值",
+            D: "尽量少管，甚至不需要政府"
+        }
+    },
+    {
+        q: "2. 当公共安全与个人自由冲突时，你更倾向？",
+        options: {
+            A: "优先自由",
+            B: "优先集体安全",
+            C: "要求平衡但略偏安全",
+            D: "自由永远第一"
+        }
+    },
+    {
+        q: "3. 对“国家不应该干预经济”怎么看？",
+        options: {
+            A: "非常同意",
+            B: "有些同意",
+            C: "不太同意",
+            D: "完全反对"
+        }
+    },
+    {
+        q: "4. 你如何看待征税？",
+        options: {
+            A: "尽量降低税收",
+            B: "合理税收用于社会保障",
+            C: "税收必须保障国家实力",
+            D: "最好没有税"
+        }
+    },
+    {
+        q: "5. 你支持什么规模的政府？",
+        options: {
+            A: "小政府",
+            B: "中等规模政府",
+            C: "强势政府",
+            D: "极小政府 / 无政府"
+        }
+    },
+    {
+        q: "6. 政府是否应该严格监管网络言论？",
+        options: {
+            A: "不应该",
+            B: "仅在极端情况下",
+            C: "应该适度监管",
+            D: "完全不该监管"
+        }
+    },
+    {
+        q: "7. 你对强制军役怎么看？",
+        options: {
+            A: "坚决反对",
+            B: "特殊时期可以接受",
+            C: "应该恢复或保持",
+            D: "甚至可以接受没有军队"
+        }
+    },
+    {
+        q: "8. 个人是否有权持枪？",
+        options: {
+            A: "是，权利多一点更安全",
+            B: "可以，但要严格审核",
+            C: "不支持民间持枪",
+            D: "人人都可以随意持枪"
+        }
+    },
+    {
+        q: "9. 国家是否应控制色情、赌博等行业？",
+        options: {
+            A: "不应控制",
+            B: "适度规范",
+            C: "严格管理",
+            D: "完全自由化"
+        }
+    },
+    {
+        q: "10. 国家能否在未经允许的情况下收集公民数据来维稳？",
+        options: {
+            A: "不应该",
+            B: "仅在反恐等极端情况",
+            C: "可以，为安全考虑",
+            D: "绝对不行"
+        }
+    },
+    // 11–20 经济与社会
+    {
+        q: "11. 医疗应该怎样提供？",
+        options: {
+            A: "完全市场化",
+            B: "商业 + 基础保障混合",
+            C: "公办为主，国家兜底",
+            D: "完全自由选择，不需要医保制度"
+        }
+    },
+    {
+        q: "12. 教育应该如何管理？",
+        options: {
+            A: "多由市场提供",
+            B: "国家提供基础教育，其它竞争",
+            C: "国家统一管理主导",
+            D: "自由教育模式，国家少管"
+        }
+    },
+    {
+        q: "13. 最公平的收入差距状态是？",
+        options: {
+            A: "拉开差距促进竞争",
+            B: "适度调节差距",
+            C: "高度调节，实现尽量平等",
+            D: "让市场自由决定"
+        }
+    },
+    {
+        q: "14. 对国企的看法？",
+        options: {
+            A: "能私有化就私有化",
+            B: "部分关键领域可保留",
+            C: "关键行业必须国有",
+            D: "不需要国企也不需要国家干预"
+        }
+    },
+    {
+        q: "15. 社会福利制度是否必要？",
+        options: {
+            A: "尽量少，避免依赖",
+            B: "提供基础安全网",
+            C: "越多越好，保障平等",
+            D: "不需要社会福利"
+        }
+    },
+    {
+        q: "16. 你心中理想的经济制度？",
+        options: {
+            A: "自由市场经济",
+            B: "社会市场经济（市场+福利）",
+            C: "混合经济偏国家主导",
+            D: "完全自由市场，不要管制"
+        }
+    },
+    {
+        q: "17. 你怎么看待最低工资制度？",
+        options: {
+            A: "应该废除",
+            B: "可以保留",
+            C: "应该提高",
+            D: "不该设置这种东西"
+        }
+    },
+    {
+        q: "18. 你最反感哪类经济问题？",
+        options: {
+            A: "高税收、管太多",
+            B: "财富过度集中、垄断",
+            C: "贫富差距过大",
+            D: "市场被管得不够自由"
+        }
+    },
+    {
+        q: "19. 私人资本是否可能控制政府？",
+        options: {
+            A: "会，但应由市场去平衡",
+            B: "会，需要反垄断和监管",
+            C: "必然会，必须高度警惕",
+            D: "不会太严重，政府少干预"
+        }
+    },
+    {
+        q: "20. 你怎么看网约车平台与司机的关系？",
+        options: {
+            A: "纯市场行为，双方自愿即可",
+            B: "需要合理监管和保障",
+            C: "必须偏向保护劳动者",
+            D: "完全自由契约，不要劳动法干预"
+        }
+    },
+    // 21–30 文化与价值
+    {
+        q: "21. 传统文化应如何对待？",
+        options: {
+            A: "尊重但不必强推",
+            B: "保留核心但接受变化",
+            C: "应大力弘扬和坚守",
+            D: "随缘，每个人自由选择"
+        }
+    },
+    {
+        q: "22. 你对同性婚姻的态度？",
+        options: {
+            A: "支持，应当合法",
+            B: "中立但不反对",
+            C: "不支持合法化",
+            D: "完全自由，国家不该管"
+        }
+    },
+    {
+        q: "23. 大麻是否应合法化？",
+        options: {
+            A: "应当合法化",
+            B: "仅医疗用途合法",
+            C: "不应合法化",
+            D: "完全自由，爱怎么来怎么来"
+        }
+    },
+    {
+        q: "24. 移民政策应该如何？",
+        options: {
+            A: "相对宽松",
+            B: "适度审查、控制规模",
+            C: "严格限制，优先本国人",
+            D: "自由流动，不设太多门槛"
+        }
+    },
+    {
+        q: "25. 你怎么看爱国主义教育？",
+        options: {
+            A: "可有可无",
+            B: "适度可以，但别洗脑",
+            C: "必须强力推行",
+            D: "不需要由国家来教"
+        }
+    },
+    {
+        q: "26. 对政治正确、小粉红、键盘侠这类现象？",
+        options: {
+            A: "整体反感",
+            B: "有些理解，但不喜欢极端",
+            C: "在某些情况下有用",
+            D: "反感一切集体情绪、群体冲锋"
+        }
+    },
+    {
+        q: "27. 你如何看待权威？",
+        options: {
+            A: "应该敢于挑战权威",
+            B: "尊重但不盲从",
+            C: "权威很重要，需要服从",
+            D: "权威越少越好"
+        }
+    },
+    {
+        q: "28. 社会秩序的主要来源是什么？",
+        options: {
+            A: "自由与契约",
+            B: "道德与法律共同约束",
+            C: "权威与纪律",
+            D: "人们自发合作与习惯"
+        }
+    },
+    {
+        q: "29. 你希望的社会节奏？",
+        options: {
+            A: "高速竞争、优胜劣汰",
+            B: "舒适又有一点压力",
+            C: "稳定有序、不折腾",
+            D: "完全自由散养，各过各的"
+        }
+    },
+    {
+        q: "30. 最让你讨厌哪种人？",
+        options: {
+            A: "喜欢干涉别人自由的人",
+            B: "自私冷漠、无视弱者的人",
+            C: "无视规则、破坏秩序的人",
+            D: "爱管闲事、动不动就上纲上线的人"
+        }
+    }
+];
+
+let currentIndex = 0;
+const answers = new Array(questions.length).fill(null);
+
+const questionTextEl = document.getElementById("question-text");
+const optionsEl = document.getElementById("options");
+const progressTextEl = document.getElementById("progress-text");
+const progressBarEl = document.getElementById("progress-bar");
+const prevBtn = document.getElementById("prev-btn");
+const nextBtn = document.getElementById("next-btn");
+const resultCard = document.getElementById("result-card");
+const resultTitle = document.getElementById("result-title");
+const resultDetail = document.getElementById("result-detail");
+
+function renderQuestion(index) {
+    const q = questions[index];
+    questionTextEl.textContent = q.q;
+    optionsEl.innerHTML = "";
+
+    for (const key in q.options) {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "option";
+        input.value = key;
+
+        if (answers[index] === key) {
+            input.checked = true;
+        }
+
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(key + ". " + q.options[key]));
+        optionsEl.appendChild(label);
+    }
+
+    progressTextEl.textContent = (index + 1) + " / " + questions.length;
+    const percent = ((index + 1) / questions.length) * 100;
+    progressBarEl.style.width = percent + "%";
+
+    prevBtn.disabled = index === 0;
+    if (index === questions.length - 1) {
+        nextBtn.textContent = "提交测试";
+    } else {
+        nextBtn.textContent = "下一题";
+    }
+}
+
+function getSelectedOption() {
+    const checked = document.querySelector('input[name="option"]:checked');
+    return checked ? checked.value : null;
+}
+
+function calcResult() {
+    const score = {A:0, B:0, C:0, D:0};
+    answers.forEach(a => {
+        if (a && score[a] !== undefined) {
+            score[a]++;
+        }
+    });
+
+    const maxScore = Math.max(score.A, score.B, score.C, score.D);
+    const tops = Object.keys(score).filter(k => score[k] === maxScore);
+
+    const ideologyMap = {
+        A: {
+            name: "古典自由主义 / 经济右派自由派",
+            desc: "你对个人自由、私有财产和市场竞争有很强的偏好，希望政府少管、少税、多放权。倾向支持“小政府 + 大市场”，讨厌管得太多、收得太多。"
+        },
+        B: {
+            name: "社会自由主义 / 温和左派 / 社会民主主义",
+            desc: "你既重视个人权利，也很在意社会公平，觉得国家应该提供一定的福利、保障弱势群体，同时保留市场活力。属于“既要自由、也要有人兜底”的类型。"
+        },
+        C: {
+            name: "保守主义 / 威权主义倾向",
+            desc: "你更看重秩序、安全、传统和稳定，能接受较强的国家权力与管控，希望社会不要乱，规则和权威对你来说很重要。"
+        },
+        D: {
+            name: "自由意志主义 / 无政府主义倾向",
+            desc: "你极度反感强权和管制，希望国家尽量缩小甚至消失，一切靠个人自由、契约和自发秩序来解决。讨厌“管这管那”的一切力量。"
+        }
+    };
+
+    let title, detail;
+    if (tops.length === 1) {
+        const k = tops[0];
+        title = "你的主要倾向：" + ideologyMap[k].name;
+        detail = ideologyMap[k].desc +
+                 "\n\n（答案分布：A=" + score.A + "，B=" + score.B + "，C=" + score.C + "，D=" + score.D + "）";
+    } else {
+        const names = tops.map(k => ideologyMap[k].name).join(" / ");
+        title = "你是一个混合型选手：" + names;
+        detail = "你的答案在多个阵营上比较平均，说明你在不同议题上会分别站队，而不是简单归类到某一个主义里。" +
+                 "\n\n（答案分布：A=" + score.A + "，B=" + score.B + "，C=" + score.C + "，D=" + score.D + "）";
+    }
+
+    resultTitle.textContent = title;
+    resultDetail.textContent = detail;
+    resultCard.style.display = "block";
+    resultCard.scrollIntoView({behavior: "smooth"});
+}
+
+prevBtn.addEventListener("click", () => {
+    const sel = getSelectedOption();
+    if (sel) answers[currentIndex] = sel;
+
+    if (currentIndex > 0) {
+        currentIndex--;
+        renderQuestion(currentIndex);
+    }
+});
+
+nextBtn.addEventListener("click", () => {
+    const sel = getSelectedOption();
+    if (!sel) {
+        alert("请先选择一个选项再继续。");
+        return;
+    }
+    answers[currentIndex] = sel;
+
+    if (currentIndex === questions.length - 1) {
+        if (answers.includes(null)) {
+            if (!confirm("你还有题没做完，确定要直接提交吗？")) {
+                return;
+            }
+        }
+        calcResult();
+    } else {
+        currentIndex++;
+        renderQuestion(currentIndex);
+    }
+});
+
+renderQuestion(0);
+
+// 生成二维码，指向当前页面 URL
+function makeQRCode() {
+    const url = window.location.href || "http://example.com/your-quiz-url";
+    new QRCode(document.getElementById("qrcode"), {
+        text: url,
+        width: 160,
+        height: 160
+    });
+}
+makeQRCode();
+</script>
+</body>
+</html>
